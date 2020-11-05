@@ -1,7 +1,6 @@
-FROM lzzy12/mega-sdk-python:latest
+FROM goldsaja/megasdk-winten:latest
 
-WORKDIR /usr/src/app
-RUN chmod 777 /usr/src/app
+WORKDIR /WORKDIR
 
 RUN apt-get -qq update && \
     apt-get install -y software-properties-common && \
@@ -20,9 +19,6 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 COPY . .
-COPY netrc /root/.netrc
 RUN chmod +x aria.sh
 
 CMD ["bash","start.sh"]
-
-
