@@ -2,7 +2,6 @@ import logging
 import re
 import threading
 import time
-
 from bot import download_dict, download_dict_lock
 
 LOGGER = logging.getLogger(__name__)
@@ -13,17 +12,17 @@ URL_REGEX = r"(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+"
 
 
 class MirrorStatus:
-    STATUS_UPLOADING = "Uploading...✅"
-    STATUS_DOWNLOADING = "Downloading...📥"
-    STATUS_WAITING = "Queued...📝"
-    STATUS_FAILED = "Failed 🚫. Cleaning download"
-    STATUS_CANCELLED = "Cancelled ❎"
-    STATUS_ARCHIVING = "Archiving...🔐"
-    STATUS_EXTRACTING = "Extracting...📂"
+    STATUS_UPLOADING = "Mengupload..."
+    STATUS_DOWNLOADING = "Mendownload..."
+    STATUS_WAITING = "Diantrikan..."
+    STATUS_FAILED = "Gagal. Membersihkan download"
+    STATUS_CANCELLED = "Dibatalkan "
+    STATUS_ARCHIVING = "Mengarsipkan..."
+    STATUS_EXTRACTING = "Mengekstrak..."
 
 
 PROGRESS_MAX_SIZE = 100 // 8
-PROGRESS_INCOMPLETE = ['●', '●', '●', '●', '●', '●', '●']
+PROGRESS_INCOMPLETE = ['▰', '▰', '▰', '▰', '▰', '▰', '▰']
 
 SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
 
@@ -56,34 +55,32 @@ def get_readable_file_size(size_in_bytes) -> str:
     try:
         return f'{round(size_in_bytes, 2)}{SIZE_UNITS[index]}'
     except IndexError:
-        return 'File too large'
+        return 'File terlalu besar'
 
 
 def getDownloadByGid(gid):
     with download_dict_lock:
         for dl in download_dict.values():
-            status = dl.status()
-            if status != MirrorStatus.STATUS_UPLOADING and status != MirrorStatus.STATUS_ARCHIVING\
-                    and status != MirrorStatus.STATUS_EXTRACTING:
-                if dl.gid() == gid:
-                    return dl
+            if (
+                dl.status() != MirrorStatus.STATUS_UPLOADING
+                and dl.status() != MirrorStatus.STATUS_ARCHIVING
+                and dl.gid() == gid
+            ):
+                return dl
     return None
 
 
 def get_progress_bar_string(status):
     completed = status.processed_bytes() / 8
     total = status.size_raw() / 8
-    if total == 0:
-        p = 0
-    else:
-        p = round(completed * 100 / total)
+    p = 0 if total == 0 else round(completed * 100 / total)
     p = min(max(p, 0), 100)
     cFull = p // 8
     cPart = p % 8 - 1
-    p_str = '●' * cFull
+    p_str = '▰' * cFull
     if cPart >= 0:
         p_str += PROGRESS_INCOMPLETE[cPart]
-    p_str += '○' * (PROGRESS_MAX_SIZE - cFull)
+    p_str += '▱' * (PROGRESS_MAX_SIZE - cFull)
     p_str = f"[{p_str}]"
     return p_str
 
@@ -92,12 +89,12 @@ def get_readable_message():
     with download_dict_lock:
         msg = ""
         for download in list(download_dict.values()):
-            msg += f"<b>Filename :</b> <code>{download.name()}</code>"
+            msg += f"<b>Nama File :</b> <code>{download.name()}</code>"
             msg += f"\n<b>Status :</b> <i>{download.status()}</i>"
             if download.status() != MirrorStatus.STATUS_ARCHIVING and download.status() != MirrorStatus.STATUS_EXTRACTING:
                 msg += f"\n<code>{get_progress_bar_string(download)} {download.progress()}</code>" \
-                       f"\n<b>Downloaded :</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}" \
-                       f"\n<b>Speed :</b> {download.speed()}, \n<b>ETA:</b> {download.eta()} "
+                       f"\n<b>Terdownload :</b> {get_readable_file_size(download.processed_bytes())} of {download.size()}" \
+                       f"\n<b>Kecepatan :</b> {download.speed()}, \n<b>ETA:</b> {download.eta()} "
                 # if hasattr(download, 'is_torrent'):
                 try:
                     msg += f"\n<b>Info :- Seeders:</b> {download.aria_download().num_seeders}" \
@@ -131,16 +128,12 @@ def get_readable_time(seconds: int) -> str:
 
 def is_url(url: str):
     url = re.findall(URL_REGEX, url)
-    if url:
-        return True
-    return False
+    return bool(url)
 
 
 def is_magnet(url: str):
     magnet = re.findall(MAGNET_REGEX, url)
-    if magnet:
-        return True
-    return False
+    return bool(magnet)
 
 
 def is_mega_link(url: str):
