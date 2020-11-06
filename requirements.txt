@@ -1,6 +1,6 @@
 requests
 psutil
-python-telegram-bot==12.8
+python-telegram-bot==12.6.1
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
